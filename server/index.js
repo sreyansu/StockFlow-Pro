@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -8,6 +9,7 @@ import categoryRoutes from './routes/categories.js';
 import inventoryRoutes from './routes/inventory.js';
 import alertRoutes from './routes/alerts.js';
 import analyticsRoutes from './routes/analytics.js';
+import adminRoutes from './routes/admin.js';
 import { authenticateToken } from './middleware/auth.js';
 import { initDatabase } from './database/init.js';
 import { handleInventoryUpdates } from './services/websocket.js';
@@ -29,7 +31,7 @@ app.use(cors({
 app.use(express.json());
 
 // Initialize database
-initializeDatabase().catch(() => {
+initDatabase().catch(() => {
   console.log('⚠️  Continuing without database - some features may be limited');
 });
 
@@ -40,6 +42,7 @@ app.use('/api/categories', authenticateToken, categoryRoutes);
 app.use('/api/inventory', authenticateToken, inventoryRoutes);
 app.use('/api/alerts', authenticateToken, alertRoutes);
 app.use('/api/analytics', authenticateToken, analyticsRoutes);
+app.use('/api/admin', authenticateToken, adminRoutes);
 
 // WebSocket handling
 handleInventoryUpdates(io);

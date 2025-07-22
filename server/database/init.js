@@ -1,4 +1,5 @@
 import pool from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
 export async function initDatabase() {
   if (!pool) {
@@ -14,6 +15,7 @@ export async function initDatabase() {
         email VARCHAR(255) UNIQUE NOT NULL,
         password VARCHAR(255) NOT NULL,
         role VARCHAR(20) NOT NULL DEFAULT 'staff',
+        status VARCHAR(20) NOT NULL DEFAULT 'pending',
         name VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -86,6 +88,17 @@ export async function initDatabase() {
       CREATE INDEX IF NOT EXISTS idx_alerts_product ON alerts(product_id);
       CREATE INDEX IF NOT EXISTS idx_alerts_unread ON alerts(is_read);
     `);
+
+    // Create a default admin user if one doesn't exist
+    const adminCheck = await pool.query('SELECT * FROM users WHERE email = $1', ['admin@stockflow.com']);
+    if (adminCheck.rows.length === 0) {
+      const hashedPassword = await bcrypt.hash('password', 10);
+      await pool.query(`
+        INSERT INTO users (email, password, role, status, name)
+        VALUES ($1, $2, 'admin', 'approved', 'Admin User')
+      `, ['admin@stockflow.com', hashedPassword]);
+      console.log('✅ Default admin user created');
+    }
 
     console.log('✅ Database initialized successfully');
   } catch (error) {

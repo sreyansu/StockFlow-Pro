@@ -44,7 +44,7 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     
     const result = await pool.query(
-      'SELECT id, email, password, name, role FROM users WHERE email = $1',
+      'SELECT id, email, password, name, role, status FROM users WHERE email = $1',
       [email]
     );
 
@@ -53,6 +53,11 @@ router.post('/login', async (req, res) => {
     }
 
     const user = result.rows[0];
+
+    if (user.status !== 'approved') {
+      return res.status(401).json({ error: 'Your account is pending approval from the administrator.' });
+    }
+
     const validPassword = await bcrypt.compare(password, user.password);
 
     if (!validPassword) {
