@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Package, Eye, EyeOff } from 'lucide-react';
 
@@ -120,7 +120,10 @@ export default function Login() {
 
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-500">
-              Demo credentials: admin@stockflow.com / password
+              Don't have an account?{' '}
+              <Link to="/signup" className="font-medium text-orange-600 hover:text-orange-500">
+                Sign up
+              </Link>
             </p>
           </div>
         </div>
