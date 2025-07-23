@@ -27,13 +27,13 @@ function App() {
               <ProtectedRoute>
                 <Layout>
                   <Routes>
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/products" element={<Products />} />
-                    <Route path="/categories" element={<Categories />} />
-                    <Route path="/inventory" element={<Inventory />} />
-                    <Route path="/analytics" element={<Analytics />} />
-                    <Route path="/admin/users" element={<AdminDashboard />} />
-                    <Route path="/" element={<Navigate to="/app/dashboard" replace />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="products" element={<Products />} />
+                    <Route path="categories" element={<Categories />} />
+                    <Route path="inventory" element={<Inventory />} />
+                    <Route path="analytics" element={<Analytics />} />
+                    <Route path="admin/users" element={<AdminDashboard />} />
+                    <Route path="" element={<Navigate to="/app/dashboard" replace />} />
                   </Routes>
                 </Layout>
               </ProtectedRoute>

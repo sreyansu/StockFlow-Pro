@@ -41,25 +41,41 @@ export default function Products() {
   }, [token, selectedCategory, searchTerm, showLowStock]);
 
   const fetchProducts = async () => {
+    console.log('Products: Starting to fetch products...');
+    console.log('Products: Token available:', !!token);
+    console.log('Products: User:', user);
+    
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.append('category', selectedCategory);
       if (searchTerm) params.append('search', searchTerm);
       if (showLowStock) params.append('low_stock', 'true');
 
-      const response = await fetch(`/api/products?${params}`, {
+      const url = `/api/products?${params}`;
+      console.log('Products: Fetching from URL:', url);
+      console.log('Products: Using token:', token?.substring(0, 20) + '...');
+      
+      const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      console.log('Products: Response status:', response.status);
+      console.log('Products: Response ok:', response.ok);
+      
       const data = await response.json();
+      console.log('Products: Response data:', data);
+      
       if (response.ok) {
+        console.log('Products: Setting products, count:', data.length);
         setProducts(data);
       } else {
+        console.error('Products: API error:', data);
         alert(data.details || data.error || 'Failed to fetch products');
       }
     } catch (error) {
-      console.error('Failed to fetch products:', error);
+      console.error('Products: Fetch error:', error);
     } finally {
+      console.log('Products: Setting loading to false');
       setLoading(false);
     }
   };
@@ -130,9 +146,17 @@ export default function Products() {
     }
   };
 
+  console.log('Products: Component rendering, loading state:', loading);
+  console.log('Products: Products array:', products);
+  console.log('Products: User:', user);
+  console.log('Products: Token exists:', !!token);
+
   if (loading) {
     return (
       <div className="space-y-6">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+          DEBUG: Products component is loading...
+        </div>
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold text-gray-900">Products</h1>
         </div>
@@ -151,6 +175,9 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+        DEBUG: Products component rendered successfully! Products count: {products.length}
+      </div>
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Products</h1>

@@ -49,7 +49,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single product
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT p.*, c.name as category_name 

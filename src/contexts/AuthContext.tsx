@@ -32,15 +32,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    console.log('AuthContext: Initializing auth state...');
     const savedToken = localStorage.getItem('token');
     const savedUser = localStorage.getItem('user');
-    
+    console.log('AuthContext: Token from localStorage:', savedToken);
+    console.log('AuthContext: User from localStorage:', savedUser);
+
     if (savedToken && savedUser) {
-      setToken(savedToken);
-      setUser(JSON.parse(savedUser));
+      try {
+        setToken(savedToken);
+        setUser(JSON.parse(savedUser));
+        console.log('AuthContext: User state set from localStorage.');
+      } catch (error) {
+        console.error('AuthContext: Failed to parse user from localStorage', error);
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    } else {
+      console.log('AuthContext: No user data found in localStorage.');
     }
-    
+
     setIsLoading(false);
+    console.log('AuthContext: isLoading set to false.');
   }, []);
 
   const login = async (email: string, password: string) => {
