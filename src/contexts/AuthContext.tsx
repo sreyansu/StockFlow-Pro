@@ -1,9 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  User as FirebaseUser,
+} from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase';
 
 interface User {
-  id: number;
-  email: string;
-  name: string;
+  uid: string;
+  email: string | null;
+  name: string | null;
   role: string;
 }
 
@@ -32,85 +41,64 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthContext: Initializing auth state...');
-    
-    const initializeAuth = async () => {
-      try {
-        const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        console.log('AuthContext: Token from localStorage:', savedToken ? 'Found' : 'Not found');
-        console.log('AuthContext: User from localStorage:', savedUser ? 'Found' : 'Not found');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      setIsLoading(true);
+      if (firebaseUser) {
+        const idToken = await firebaseUser.getIdToken();
+        const userDocRef = doc(db, 'users', firebaseUser.uid);
+        const userDoc = await getDoc(userDocRef);
 
-        if (savedToken && savedUser) {
-          try {
-            const userObj = JSON.parse(savedUser);
-            setToken(savedToken);
-            setUser(userObj);
-            console.log('AuthContext: User state set from localStorage:', userObj);
-          } catch (error) {
-            console.error('AuthContext: Failed to parse user from localStorage', error);
-            setUser(null);
-            setToken(null);
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-          }
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: userData.name || firebaseUser.displayName,
+            role: userData.role || 'user',
+          });
         } else {
-          console.log('AuthContext: No user data found in localStorage.');
-          setUser(null);
-          setToken(null);
+          // This case might happen if user is created in Firebase Auth but not in Firestore
+          // For now, we'll set a default user object
+          setUser({
+            uid: firebaseUser.uid,
+            email: firebaseUser.email,
+            name: firebaseUser.displayName,
+            role: 'user',
+          });
         }
-      } catch (error) {
-        console.error('AuthContext: Error during initialization:', error);
+        setToken(idToken);
+        localStorage.setItem('token', idToken);
+      } else {
         setUser(null);
         setToken(null);
-      } finally {
-        setIsLoading(false);
-        console.log('AuthContext: isLoading set to false.');
+        localStorage.removeItem('token');
       }
-    };
+      setIsLoading(false);
+    });
 
-    initializeAuth();
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Login failed');
-    }
-
-    const data = await response.json();
-    
-    setUser(data.user);
-    setToken(data.token);
-    
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
+    await signInWithEmailAndPassword(auth, email, password);
   };
 
   const signup = async (name: string, email: string, password: string) => {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    });
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const firebaseUser = userCredential.user;
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Signup failed');
-    }
+    // Create user document in Firestore
+    await setDoc(doc(db, 'users', firebaseUser.uid), {
+      name,
+      email,
+      role: 'admin', // Default role for new signups
+      status: 'approved',
+      createdAt: new Date().toISOString(),
+    });
   };
 
-  const logout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+  const logout = async () => {
+    await signOut(auth);
   };
 
   return (

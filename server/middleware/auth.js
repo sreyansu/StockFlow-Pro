@@ -1,31 +1,26 @@
-import jwt from 'jsonwebtoken';
-import pool from '../config/database.js';
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
+import { auth, db } from '../config/firebase.js';
 
 export const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  const idToken = authHeader && authHeader.split(' ')[1];
 
-  if (!token) {
+  if (!idToken) {
     return res.status(401).json({ error: 'Access token required' });
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const result = await pool.query(
-      'SELECT id, email, role, name FROM users WHERE id = $1',
-      [decoded.userId]
-    );
+    const decodedToken = await auth.verifyIdToken(idToken);
+    const userDoc = await db.collection('users').doc(decodedToken.uid).get();
 
-    if (result.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid token' });
+    if (!userDoc.exists) {
+        return res.status(401).json({ error: 'User not found in database' });
     }
 
-    req.user = result.rows[0];
+    req.user = { uid: decodedToken.uid, ...userDoc.data() };
     next();
   } catch (error) {
-    return res.status(403).json({ error: 'Invalid token' });
+    console.error('Error verifying token:', error);
+    return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
 
