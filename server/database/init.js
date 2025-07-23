@@ -45,6 +45,7 @@ export async function initDatabase() {
         min_stock_level INTEGER NOT NULL DEFAULT 10,
         max_stock_level INTEGER NOT NULL DEFAULT 1000,
         unit_price DECIMAL(10,2) DEFAULT 0,
+        discounted_price DECIMAL(10, 2),
         supplier VARCHAR(255),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

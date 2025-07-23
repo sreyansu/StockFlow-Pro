@@ -51,7 +51,7 @@ export default function StockUpdateModal({ isOpen, onClose, products, selectedPr
     setLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3001/api/inventory/update-stock', {
+      const response = await fetch('http://localhost:3002/api/inventory/update-stock', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

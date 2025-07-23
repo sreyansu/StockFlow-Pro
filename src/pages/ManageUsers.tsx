@@ -19,7 +19,7 @@ export default function AdminUsers() {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('http://localhost:3001/api/admin/users', {
+        const response = await fetch('http://localhost:3002/api/admin/users', {
           headers: {
             'Authorization': `Bearer ${token}`,
           },
@@ -43,7 +43,7 @@ export default function AdminUsers() {
 
   const handleApprove = async (id: number) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/admin/users/${id}/approve`, {
+      const response = await fetch(`http://localhost:3002/api/admin/users/${id}/approve`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -63,7 +63,7 @@ export default function AdminUsers() {
   const handleDelete = async (id: number) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        const response = await fetch(`http://localhost:3001/api/admin/users/${id}`, {
+        const response = await fetch(`http://localhost:3002/api/admin/users/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`,

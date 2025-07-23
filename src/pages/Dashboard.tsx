@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Package, AlertTriangle, TrendingUp, Activity, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
@@ -48,9 +48,9 @@ export default function Dashboard() {
       const headers = { 'Authorization': `Bearer ${token}` };
 
       const [statsRes, productsRes, movementsRes] = await Promise.all([
-        fetch('http://localhost:3001/api/analytics/dashboard', { headers }),
-        fetch('http://localhost:3001/api/products?low_stock=true', { headers }),
-        fetch('http://localhost:3001/api/inventory/movements?limit=5', { headers })
+        fetch('http://localhost:3002/api/analytics/dashboard', { headers }),
+        fetch('http://localhost:3002/api/products?low_stock=true', { headers }),
+        fetch('http://localhost:3002/api/inventory/movements?limit=5', { headers })
       ]);
 
       if (statsRes.ok) setStats(await statsRes.json());

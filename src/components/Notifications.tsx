@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { X, CheckCircle, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -30,7 +30,7 @@ export default function Notifications({ isOpen, onClose }: NotificationsProps) {
   const fetchAlerts = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/alerts', {
+      const response = await fetch('http://localhost:3002/api/alerts', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -49,7 +49,7 @@ export default function Notifications({ isOpen, onClose }: NotificationsProps) {
 
   const markAsRead = async (alertId: number) => {
     try {
-      const response = await fetch(`http://localhost:3001/api/alerts/${alertId}/read`, {
+      const response = await fetch(`http://localhost:3002/api/alerts/${alertId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -68,7 +68,7 @@ export default function Notifications({ isOpen, onClose }: NotificationsProps) {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/alerts/mark-all-read', {
+      const response = await fetch('http://localhost:3002/api/alerts/mark-all-read', {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`

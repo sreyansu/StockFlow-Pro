@@ -12,6 +12,7 @@ interface Product {
   min_stock_level: number;
   max_stock_level: number;
   unit_price: number;
+  discounted_price?: number | null;
   supplier: string;
 }
 
@@ -24,11 +25,11 @@ interface ProductModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product | null;
-  categories: Category[];
 }
 
-export default function ProductModal({ isOpen, onClose, product, categories }: ProductModalProps) {
+export default function ProductModal({ isOpen, onClose, product }: ProductModalProps) {
   const { token } = useAuth();
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -39,6 +40,7 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
     min_stock_level: 10,
     max_stock_level: 1000,
     unit_price: 0,
+    discounted_price: '' as string | number,
     supplier: ''
   });
 
@@ -53,6 +55,7 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
         min_stock_level: product.min_stock_level,
         max_stock_level: product.max_stock_level,
         unit_price: product.unit_price,
+        discounted_price: product.discounted_price?.toString() || '',
         supplier: product.supplier || ''
       });
     } else {
@@ -65,10 +68,30 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
         min_stock_level: 10,
         max_stock_level: 1000,
         unit_price: 0,
+        discounted_price: '',
         supplier: ''
       });
     }
   }, [product, isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      const fetchCategories = async () => {
+        try {
+          const response = await fetch('/api/categories', {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          if (response.ok) {
+            const data = await response.json();
+            setCategories(data);
+          }
+        } catch (error) {
+          console.error('Failed to fetch categories for modal:', error);
+        }
+      };
+      fetchCategories();
+    }
+  }, [isOpen, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,8 +99,8 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
 
     try {
       const url = product 
-        ? `http://localhost:3001/api/products/${product.id}`
-        : 'http://localhost:3001/api/products';
+        ? `/api/products/${product.id}`
+        : '/api/products';
       
       const method = product ? 'PUT' : 'POST';
       
@@ -89,7 +112,8 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
         },
         body: JSON.stringify({
           ...formData,
-          category_id: formData.category_id ? parseInt(formData.category_id) : null
+          category_id: formData.category_id ? parseInt(formData.category_id) : null,
+          discounted_price: formData.discounted_price ? parseFloat(String(formData.discounted_price)) : null
         })
       });
 
@@ -97,7 +121,7 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
         onClose();
       } else {
         const error = await response.json();
-        alert(error.error || 'Failed to save product');
+        alert(error.details || error.error || 'Failed to save product');
       }
     } catch (error) {
       console.error('Failed to save product:', error);
@@ -249,18 +273,42 @@ export default function ProductModal({ isOpen, onClose, product, categories }: P
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Unit Price
             </label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.unit_price}
-                onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || 0 })}
-                className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                placeholder="0.00"
-              />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Unit Price
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.unit_price}
+                  onChange={(e) => setFormData({ ...formData, unit_price: parseFloat(e.target.value) || 0 })}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="0.00"
+                />
+              </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Discounted Price (Optional)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₹</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.discounted_price.toString()}
+                  onChange={(e) => setFormData({ ...formData, discounted_price: e.target.value })}
+                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  placeholder="0.00"
+                />
+              </div>
+            </div>
+          </div>
           </div>
 
           <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

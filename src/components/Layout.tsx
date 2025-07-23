@@ -11,7 +11,8 @@ import {
   User,
   LogOut,
   Menu,
-  X
+  X,
+  Shield
 } from 'lucide-react';
 import Notifications from './Notifications';
 
@@ -32,6 +33,10 @@ export default function Layout({ children }: LayoutProps) {
     { name: 'Inventory', href: '/app/inventory', icon: Archive },
     { name: 'Analytics', href: '/app/analytics', icon: BarChart3 },
   ];
+
+  if (user?.role === 'admin') {
+    navigation.push({ name: 'Admin', href: '/app/admin/users', icon: Shield });
+  }
 
   const isCurrentPath = (path: string) => location.pathname === path;
 

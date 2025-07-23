@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer';
+import brevo from '@getbrevo/brevo';
 
 // Create alert in database
 export async function createAlert(client, { product_id, alert_type, message }) {
@@ -25,35 +25,31 @@ export async function createAlert(client, { product_id, alert_type, message }) {
 async function sendNotification({ type, message, product_id }) {
   try {
     // Email notification
-    if (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) {
-      const transporter = nodemailer.createTransporter({
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT || 587,
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS
-        }
-      });
+    if (process.env.BREVO_API_KEY) {
+      const apiInstance = new brevo.TransactionalEmailsApi();
+      const apiKey = apiInstance.authentications['api-key'];
+      apiKey.apiKey = process.env.BREVO_API_KEY;
 
-      await transporter.sendMail({
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: process.env.ALERT_EMAIL || 'admin@stockflow.com',
-        subject: `StockFlow Pro Alert: ${type}`,
-        text: message,
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #f97316;">StockFlow Pro Alert</h2>
-            <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
-              <p style="margin: 0; color: #92400e;"><strong>${type}</strong></p>
-              <p style="margin: 10px 0 0 0; color: #92400e;">${message}</p>
-            </div>
-            <p style="color: #6b7280; font-size: 14px;">
-              This is an automated alert from StockFlow Pro inventory management system.
-            </p>
+      const sendSmtpEmail = new brevo.SendSmtpEmail();
+
+      sendSmtpEmail.subject = `StockFlow Pro Alert: ${type}`;
+      sendSmtpEmail.htmlContent = `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #f97316;">StockFlow Pro Alert</h2>
+          <div style="background-color: #fef3c7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 0; color: #92400e;"><strong>${type}</strong></p>
+            <p style="margin: 10px 0 0 0; color: #92400e;">${message}</p>
           </div>
-        `
-      });
+          <p style="color: #6b7280; font-size: 14px;">
+            This is an automated alert from StockFlow Pro inventory management system.
+          </p>
+        </div>
+      `;
+      sendSmtpEmail.sender = { name: 'StockFlow Pro', email: process.env.BREVO_SENDER_EMAIL || 'noreply@stockflow.com' };
+      sendSmtpEmail.to = [{ email: process.env.ALERT_EMAIL || 'admin@stockflow.com' }];
+
+      await apiInstance.sendTransacEmail(sendSmtpEmail);
+      console.log('Brevo email sent successfully.');
     }
 
     // Slack webhook notification

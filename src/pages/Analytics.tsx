@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { TrendingUp, Package, AlertTriangle, Activity, BarChart3, PieChart } from 'lucide-react';
 import StockChart from '../components/charts/StockChart';
@@ -46,7 +46,7 @@ export default function Analytics() {
 
   const fetchAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/analytics/dashboard', {
+      const response = await fetch('http://localhost:3002/api/analytics/dashboard', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -63,7 +63,7 @@ export default function Analytics() {
 
   const fetchPerformance = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/analytics/products/performance', {
+      const response = await fetch('http://localhost:3002/api/analytics/products/performance', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       

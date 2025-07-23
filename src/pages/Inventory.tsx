@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Minus, Search, Filter, Calendar, User, ArrowUpDown, Package } from 'lucide-react';
 import StockUpdateModal from '../components/StockUpdateModal';
@@ -44,7 +44,7 @@ export default function Inventory() {
       const params = new URLSearchParams();
       if (selectedProduct) params.append('product_id', selectedProduct);
       
-      const response = await fetch(`http://localhost:3001/api/inventory/movements?${params}`, {
+      const response = await fetch(`http://localhost:3002/api/inventory/movements?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -61,7 +61,7 @@ export default function Inventory() {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/products', {
+      const response = await fetch('http://localhost:3002/api/products', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       

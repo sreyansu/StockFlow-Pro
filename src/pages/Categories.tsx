@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Edit, Trash2, Tag, Package } from 'lucide-react';
 import CategoryModal from '../components/CategoryModal';
@@ -24,7 +24,7 @@ export default function Categories() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/categories', {
+      const response = await fetch('/api/categories', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -43,7 +43,7 @@ export default function Categories() {
     if (!confirm('Are you sure you want to delete this category? This will remove the category from all associated products.')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/categories/${categoryId}`, {
+      const response = await fetch(`/api/categories/${categoryId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });

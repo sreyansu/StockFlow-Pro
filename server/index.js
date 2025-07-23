@@ -52,7 +52,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3002;
 server.listen(PORT, () => {
   console.log(`🚀 StockFlow Pro server running on port ${PORT}`);
 });

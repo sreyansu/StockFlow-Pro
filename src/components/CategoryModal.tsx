@@ -42,8 +42,8 @@ export default function CategoryModal({ isOpen, onClose, category }: CategoryMod
 
     try {
       const url = category 
-        ? `http://localhost:3001/api/categories/${category.id}`
-        : 'http://localhost:3001/api/categories';
+        ? `/api/categories/${category.id}`
+        : '/api/categories';
       
       const method = category ? 'PUT' : 'POST';
       

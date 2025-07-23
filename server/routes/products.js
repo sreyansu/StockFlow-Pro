@@ -1,11 +1,11 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get all products with category info
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const { category, search, low_stock } = req.query;
     let query = `
@@ -43,7 +43,8 @@ router.get('/', async (req, res) => {
     const result = await pool.query(query, params);
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ error: 'Failed to fetch products' });
+    console.error('Failed to fetch products:', error);
+    res.status(500).json({ error: 'Failed to fetch products', details: error.message });
   }
 });
 
@@ -73,15 +74,15 @@ router.post('/', requireAdmin, async (req, res) => {
   try {
     const {
       name, description, sku, category_id, current_stock,
-      min_stock_level, max_stock_level, unit_price, supplier
+      min_stock_level, max_stock_level, unit_price, discounted_price, supplier
     } = req.body;
 
     const result = await pool.query(
       `INSERT INTO products (name, description, sku, category_id, current_stock, 
-                           min_stock_level, max_stock_level, unit_price, supplier)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                           min_stock_level, max_stock_level, unit_price, discounted_price, supplier)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING *`,
-      [name, description, sku, category_id, current_stock, min_stock_level, max_stock_level, unit_price, supplier]
+      [name, description, sku, category_id, current_stock, min_stock_level, max_stock_level, unit_price, discounted_price || null, supplier]
     );
 
     // Log initial stock entry
@@ -98,7 +99,8 @@ router.post('/', requireAdmin, async (req, res) => {
     if (error.code === '23505') {
       return res.status(400).json({ error: 'SKU already exists' });
     }
-    res.status(500).json({ error: 'Failed to create product' });
+    console.error('Failed to create product:', error);
+    res.status(500).json({ error: 'Failed to create product', details: error.message });
   }
 });
 
@@ -106,17 +108,17 @@ router.post('/', requireAdmin, async (req, res) => {
 router.put('/:id', requireAdmin, async (req, res) => {
   try {
     const {
-      name, description, sku, category_id, min_stock_level, max_stock_level, unit_price, supplier
+      name, description, sku, category_id, min_stock_level, max_stock_level, unit_price, discounted_price, supplier
     } = req.body;
 
     const result = await pool.query(
       `UPDATE products 
        SET name = $1, description = $2, sku = $3, category_id = $4, 
-           min_stock_level = $5, max_stock_level = $6, unit_price = $7, supplier = $8, 
+           min_stock_level = $5, max_stock_level = $6, unit_price = $7, discounted_price = $8, supplier = $9, 
            updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9
+       WHERE id = $10
        RETURNING *`,
-      [name, description, sku, category_id, min_stock_level, max_stock_level, unit_price, supplier, req.params.id]
+      [name, description, sku, category_id, min_stock_level, max_stock_level, unit_price, discounted_price || null, supplier, req.params.id]
     );
 
     if (result.rows.length === 0) {

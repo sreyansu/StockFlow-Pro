@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Search, Filter, Edit, Trash2, Package, AlertTriangle } from 'lucide-react';
 import ProductModal from '../components/ProductModal';
@@ -14,6 +14,7 @@ interface Product {
   min_stock_level: number;
   max_stock_level: number;
   unit_price: number;
+  discounted_price?: number;
   supplier: string;
   stock_status: 'low' | 'normal' | 'high';
 }
@@ -46,13 +47,15 @@ export default function Products() {
       if (searchTerm) params.append('search', searchTerm);
       if (showLowStock) params.append('low_stock', 'true');
 
-      const response = await fetch(`http://localhost:3001/api/products?${params}`, {
+      const response = await fetch(`/api/products?${params}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      const data = await response.json();
       if (response.ok) {
-        const data = await response.json();
         setProducts(data);
+      } else {
+        alert(data.details || data.error || 'Failed to fetch products');
       }
     } catch (error) {
       console.error('Failed to fetch products:', error);
@@ -63,7 +66,7 @@ export default function Products() {
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch('http://localhost:3001/api/categories', {
+      const response = await fetch('/api/categories', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -80,7 +83,7 @@ export default function Products() {
     if (!confirm('Are you sure you want to delete this product?')) return;
 
     try {
-      const response = await fetch(`http://localhost:3001/api/products/${productId}`, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -103,7 +106,7 @@ export default function Products() {
   };
 
   const getStockStatusBadge = (product: Product) => {
-    const { stock_status, current_stock } = product;
+    const { stock_status } = product;
     
     if (stock_status === 'low') {
       return (
@@ -283,7 +286,14 @@ export default function Products() {
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-500">Unit Price</span>
                     <span className="text-sm font-medium text-gray-900">
-                      ${product.unit_price?.toFixed(2) || '0.00'}
+                      {product.discounted_price ? (
+                        <>
+                          <span className="text-red-600 font-bold">₹{product.discounted_price.toFixed(2)}</span>
+                          <span className="line-through text-gray-500 ml-2">₹{product.unit_price.toFixed(2)}</span>
+                        </>
+                      ) : (
+                        <span>₹{product.unit_price.toFixed(2)}</span>
+                      )}
                     </span>
                   </div>
 
@@ -332,7 +342,6 @@ export default function Products() {
         isOpen={modalOpen}
         onClose={handleModalClose}
         product={editingProduct}
-        categories={categories}
       />
     </div>
   );
