@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key_here';
 // Register
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, name, role = 'staff' } = req.body;
+    const { email, password, name, role = 'admin' } = req.body;
     
     const hashedPassword = await bcrypt.hash(password, 10);
     

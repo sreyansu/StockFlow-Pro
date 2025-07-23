@@ -5,7 +5,7 @@ import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 const router = express.Router();
 
 // Get all products with category info
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const { category, search, low_stock } = req.query;
     let query = `
@@ -49,7 +49,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get single product
-router.get('/:id', authenticateToken, async (req, res) => {
+router.get('/:id', async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT p.*, c.name as category_name 
