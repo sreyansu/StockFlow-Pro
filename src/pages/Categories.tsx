@@ -170,10 +170,10 @@ export default function Categories() {
                     {category.product_count} product{category.product_count !== 1 ? 's' : ''}
                   </div>
                   <div className="flex items-center">
-                    <div className={`w-3 h-3 rounded-full ${
+                    <div className={`w-3 h-3 rounded-full ${ 
                       category.product_count > 0 ? 'bg-green-400' : 'bg-gray-300'
                     }`}></div>
-                    <span className={`ml-2 text-xs font-medium ${
+                    <span className={`ml-2 text-xs font-medium ${ 
                       category.product_count > 0 ? 'text-green-700' : 'text-gray-500'
                     }`}>
                       {category.product_count > 0 ? 'Active' : 'Empty'}
@@ -211,3 +211,5 @@ export default function Categories() {
     </div>
   );
 }
+
+

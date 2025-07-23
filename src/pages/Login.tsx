@@ -44,6 +44,13 @@ export default function Login() {
         </div>
 
         <div className="bg-white py-8 px-6 shadow-xl rounded-2xl">
+          {/* Debug information */}
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg">
+            <h4 className="font-medium mb-2">🛠️ Development Mode - Default Admin Credentials:</h4>
+            <p className="text-sm">Email: admin@stockflow.com</p>
+            <p className="text-sm">Password: password</p>
+          </div>
+
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}

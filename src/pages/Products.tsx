@@ -36,15 +36,13 @@ export default function Products() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
+    if (token) {
+      fetchProducts();
+      fetchCategories();
+    }
   }, [token, selectedCategory, searchTerm, showLowStock]);
 
   const fetchProducts = async () => {
-    console.log('Products: Starting to fetch products...');
-    console.log('Products: Token available:', !!token);
-    console.log('Products: User:', user);
-    
     try {
       const params = new URLSearchParams();
       if (selectedCategory) params.append('category', selectedCategory);
@@ -52,30 +50,21 @@ export default function Products() {
       if (showLowStock) params.append('low_stock', 'true');
 
       const url = `/api/products?${params}`;
-      console.log('Products: Fetching from URL:', url);
-      console.log('Products: Using token:', token?.substring(0, 20) + '...');
-      
       const response = await fetch(url, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      console.log('Products: Response status:', response.status);
-      console.log('Products: Response ok:', response.ok);
-      
       const data = await response.json();
-      console.log('Products: Response data:', data);
       
       if (response.ok) {
-        console.log('Products: Setting products, count:', data.length);
         setProducts(data);
       } else {
-        console.error('Products: API error:', data);
+        console.error('API error:', data);
         alert(data.details || data.error || 'Failed to fetch products');
       }
     } catch (error) {
-      console.error('Products: Fetch error:', error);
+      console.error('Fetch error:', error);
     } finally {
-      console.log('Products: Setting loading to false');
       setLoading(false);
     }
   };
@@ -146,10 +135,7 @@ export default function Products() {
     }
   };
 
-  console.log('Products: Component rendering, loading state:', loading);
-  console.log('Products: Products array:', products);
-  console.log('Products: User:', user);
-  console.log('Products: Token exists:', !!token);
+
 
   if (loading) {
     return (
@@ -373,3 +359,4 @@ export default function Products() {
     </div>
   );
 }
+

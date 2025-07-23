@@ -33,29 +33,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     console.log('AuthContext: Initializing auth state...');
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
-    console.log('AuthContext: Token from localStorage:', savedToken);
-    console.log('AuthContext: User from localStorage:', savedUser);
-
-    if (savedToken && savedUser) {
+    
+    const initializeAuth = async () => {
       try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-        console.log('AuthContext: User state set from localStorage.');
+        const savedToken = localStorage.getItem('token');
+        const savedUser = localStorage.getItem('user');
+        console.log('AuthContext: Token from localStorage:', savedToken ? 'Found' : 'Not found');
+        console.log('AuthContext: User from localStorage:', savedUser ? 'Found' : 'Not found');
+
+        if (savedToken && savedUser) {
+          try {
+            const userObj = JSON.parse(savedUser);
+            setToken(savedToken);
+            setUser(userObj);
+            console.log('AuthContext: User state set from localStorage:', userObj);
+          } catch (error) {
+            console.error('AuthContext: Failed to parse user from localStorage', error);
+            setUser(null);
+            setToken(null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+          }
+        } else {
+          console.log('AuthContext: No user data found in localStorage.');
+          setUser(null);
+          setToken(null);
+        }
       } catch (error) {
-        console.error('AuthContext: Failed to parse user from localStorage', error);
+        console.error('AuthContext: Error during initialization:', error);
         setUser(null);
         setToken(null);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
+      } finally {
+        setIsLoading(false);
+        console.log('AuthContext: isLoading set to false.');
       }
-    } else {
-      console.log('AuthContext: No user data found in localStorage.');
-    }
+    };
 
-    setIsLoading(false);
-    console.log('AuthContext: isLoading set to false.');
+    initializeAuth();
   }, []);
 
   const login = async (email: string, password: string) => {

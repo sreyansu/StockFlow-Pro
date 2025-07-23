@@ -1,11 +1,11 @@
 import express from 'express';
 import pool from '../config/database.js';
-import { requireAdmin } from '../middleware/auth.js';
+import { authenticateToken, requireAdmin } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // Get all categories
-router.get('/', async (req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
     const result = await pool.query(
       `SELECT c.*, COUNT(p.id) as product_count 

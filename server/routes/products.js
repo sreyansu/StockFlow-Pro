@@ -16,7 +16,7 @@ router.get('/', authenticateToken, async (req, res) => {
                ELSE 'normal'
              END as stock_status
       FROM products p
-      LEFT JOIN categories c ON p.category_id = c.id
+      INNER JOIN categories c ON p.category_id = c.id
       WHERE 1=1
     `;
     const params = [];
