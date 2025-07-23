@@ -1,12 +1,18 @@
 import brevo from '@getbrevo/brevo';
+import { db } from '../config/firebase.js';
 
 // Create alert in database
-export async function createAlert(client, { product_id, alert_type, message }) {
+export async function createAlert({ product_id, alert_type, message }) {
   try {
-    const result = await client.query(
-      'INSERT INTO alerts (product_id, alert_type, message) VALUES ($1, $2, $3) RETURNING *',
-      [product_id, alert_type, message]
-    );
+    const newAlert = {
+      product_id,
+      alert_type,
+      message,
+      is_read: false,
+      created_at: new Date().toISOString(),
+    };
+
+    const docRef = await db.collection('alerts').add(newAlert);
     
     // Send notification (email, webhook, etc.)
     await sendNotification({
@@ -15,7 +21,7 @@ export async function createAlert(client, { product_id, alert_type, message }) {
       product_id
     });
     
-    return result.rows[0];
+    return { id: docRef.id, ...newAlert };
   } catch (error) {
     console.error('Failed to create alert:', error);
   }

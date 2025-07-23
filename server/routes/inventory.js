@@ -1,5 +1,5 @@
 import express from 'express';
-import pool from '../config/database.js';
+import { db } from '../config/firebase.js';
 import { createAlert } from '../services/alerts.js';
 
 const router = express.Router();
@@ -8,103 +8,106 @@ const router = express.Router();
 router.get('/movements', async (req, res) => {
   try {
     const { product_id, limit = 50 } = req.query;
-    let query = `
-      SELECT im.*, p.name as product_name, p.sku, u.name as user_name
-      FROM inventory_movements im
-      LEFT JOIN products p ON im.product_id = p.id
-      LEFT JOIN users u ON im.user_id = u.id
-      WHERE 1=1
-    `;
-    const params = [];
-    let paramCount = 0;
+    let query = db.collection('inventory_movements');
 
     if (product_id) {
-      paramCount++;
-      query += ` AND im.product_id = $${paramCount}`;
-      params.push(product_id);
+      query = query.where('product_id', '==', product_id);
     }
 
-    query += ` ORDER BY im.created_at DESC LIMIT $${paramCount + 1}`;
-    params.push(limit);
+    const snapshot = await query.orderBy('created_at', 'desc').limit(Number(limit)).get();
+    
+    const movements = await Promise.all(snapshot.docs.map(async (doc) => {
+        const movement = { id: doc.id, ...doc.data() };
+        
+        // Fetch product and user details
+        const productDoc = await db.collection('products').doc(movement.product_id).get();
+        const userDoc = await db.collection('users').doc(movement.user_id).get();
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+        return {
+            ...movement,
+            product_name: productDoc.exists ? productDoc.data().name : 'Unknown Product',
+            sku: productDoc.exists ? productDoc.data().sku : 'N/A',
+            user_name: userDoc.exists ? userDoc.data().name : 'System'
+        };
+    }));
+
+    res.json(movements);
   } catch (error) {
+    console.error('Failed to fetch inventory movements:', error);
     res.status(500).json({ error: 'Failed to fetch inventory movements' });
   }
 });
 
 // Update stock
 router.post('/update-stock', async (req, res) => {
-  const client = await pool.connect();
-  
+  const { product_id, movement_type, quantity, reason } = req.body;
+  const productRef = db.collection('products').doc(product_id);
+
   try {
-    await client.query('BEGIN');
-    
-    const { product_id, movement_type, quantity, reason } = req.body;
-    
-    // Get current stock
-    const productResult = await client.query(
-      'SELECT current_stock, min_stock_level, name FROM products WHERE id = $1',
-      [product_id]
-    );
-    
-    if (productResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(404).json({ error: 'Product not found' });
-    }
-    
-    const currentStock = productResult.rows[0].current_stock;
-    const minStockLevel = productResult.rows[0].min_stock_level;
-    const productName = productResult.rows[0].name;
-    
-    let newStock;
-    if (movement_type === 'IN') {
-      newStock = currentStock + quantity;
-    } else if (movement_type === 'OUT') {
-      newStock = currentStock - quantity;
-      if (newStock < 0) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ error: 'Insufficient stock' });
+    const movementResult = await db.runTransaction(async (transaction) => {
+      const productDoc = await transaction.get(productRef);
+      if (!productDoc.exists) {
+        throw new Error('Product not found');
       }
-    } else {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ error: 'Invalid movement type' });
-    }
-    
-    // Update product stock
-    await client.query(
-      'UPDATE products SET current_stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
-      [newStock, product_id]
-    );
-    
-    // Log movement
-    const movementResult = await client.query(
-      `INSERT INTO inventory_movements (product_id, movement_type, quantity, previous_stock, new_stock, reason, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      [product_id, movement_type, quantity, currentStock, newStock, reason, req.user.id]
-    );
-    
-    // Check for low stock alert
-    if (newStock <= minStockLevel) {
-      await createAlert(client, {
-        product_id,
-        alert_type: 'LOW_STOCK',
-        message: `${productName} is running low (${newStock} units remaining)`
+
+      const { current_stock, min_stock_level, name } = productDoc.data();
+      let new_stock;
+
+      if (movement_type === 'IN') {
+        new_stock = current_stock + quantity;
+      } else if (movement_type === 'OUT') {
+        new_stock = current_stock - quantity;
+        if (new_stock < 0) {
+          throw new Error('Insufficient stock');
+        }
+      } else {
+        throw new Error('Invalid movement type');
+      }
+
+      transaction.update(productRef, { 
+        current_stock: new_stock,
+        updated_at: new Date().toISOString()
       });
-    }
-    
-    await client.query('COMMIT');
-    
-    res.json({
-      movement: movementResult.rows[0],
-      new_stock: newStock
+
+      const movementRef = db.collection('inventory_movements').doc();
+      const movementData = {
+        product_id,
+        movement_type,
+        quantity,
+        previous_stock: current_stock,
+        new_stock,
+        reason,
+        user_id: req.user.uid,
+        created_at: new Date().toISOString(),
+      };
+      transaction.set(movementRef, movementData);
+
+      // Check for low stock alert
+      if (new_stock <= min_stock_level) {
+        await createAlert({
+          product_id,
+          alert_type: 'LOW_STOCK',
+          message: `${name} is running low (${new_stock} units remaining)`
+        });
+      }
+
+      return { id: movementRef.id, ...movementData };
     });
+
+    res.json({
+      movement: movementResult,
+      new_stock: movementResult.new_stock
+    });
+
   } catch (error) {
-    await client.query('ROLLBACK');
+    console.error('Stock update failed:', error);
+    if (error.message === 'Product not found') {
+        return res.status(404).json({ error: error.message });
+    }
+    if (error.message === 'Insufficient stock' || error.message === 'Invalid movement type') {
+        return res.status(400).json({ error: error.message });
+    }
     res.status(500).json({ error: 'Failed to update stock' });
-  } finally {
-    client.release();
   }
 });
 

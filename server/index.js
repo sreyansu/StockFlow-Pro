@@ -11,7 +11,7 @@ import alertRoutes from './routes/alerts.js';
 import analyticsRoutes from './routes/analytics.js';
 import adminRoutes from './routes/admin.js';
 import { authenticateToken } from './middleware/auth.js';
-import { initDatabase } from './database/init.js';
+
 import { handleInventoryUpdates } from './services/websocket.js';
 
 const app = express();
@@ -30,10 +30,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Initialize database
-initDatabase().catch(() => {
-  console.log('⚠️  Continuing without database - some features may be limited');
-});
+
 
 // Routes
 app.use('/api/auth', authRoutes);
