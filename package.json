@@ -9,7 +9,8 @@
     "server": "kill-port 3002 && nodemon server/index.js",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "create-master-admin": "node server/scripts/create-master-admin.js"
   },
   "dependencies": {
     "@getbrevo/brevo": "^2.5.0",
